@@ -1,0 +1,41 @@
+import numpy as np
+from numpy.random import choice
+
+options = ('Aa sick', 'Aa healthy', 'aa sick', 'aa healthy')
+#multiplying allele freq by disease freqfor 185delAG
+probability_distribution = (0.015, 0.018, 0.081, 0.886)
+
+sensitivity = []
+specificity = []
+oddsratio = []
+
+#while loop to repeat my random selection of 500 individuals based on probability_distribution
+count = 0
+while count < 1000:
+    samplepop = np.random.choice(options, 500, p=probability_distribution)
+    num_tp = (samplepop == 'Aa sick').sum()
+    num_fp = (samplepop == 'Aa healthy').sum()
+    num_tn = (samplepop == 'aa healthy').sum()
+    num_fn = (samplepop == 'aa sick').sum()
+    
+    #record results for each loop
+    oddsratio.append((num_tp*num_tn)/(num_fp*num_fn))
+    sensitivity.append(num_tp/(num_tp + num_fn))
+    specificity.append(num_tn/(num_tn+num_fp))
+    count += 1
+
+median_oddsratio = np.percentile(oddsratio, 0.5)
+lower_oddsratio = np.percentile(oddsratio, 0.025)
+higher_oddsratio = np.percentile(oddsratio, 0.975)    
+    
+median_sens = np.percentile(sensitivity, 0.5)
+lower_sens = np.percentile(sensitivity, 0.025)
+higher_sens = np.percentile(sensitivity, 0.975)
+
+median_spec = np.percentile(specificity, 0.5)
+lower_spec = np.percentile(specificity, 0.025)
+higher_spec = np.percentile(specificity, 0.975)
+
+print('Odds Ratio:', round(median_oddsratio, 3), 'with a 95 CI of', round(lower_oddsratio, 3), 'to', round(higher_oddsratio, 3))
+print('Median sensitivty:', round(median_sens, 3), 'with a 95 CI of', round(lower_sens, 3), 'to', round(higher_sens, 3))
+print('Median specificity:', round(median_spec, 3), 'with a 95 CI of', round(lower_spec, 3), 'to', round(higher_spec, 3))
