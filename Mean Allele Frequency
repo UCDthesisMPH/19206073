@@ -1,0 +1,119 @@
+import pandas as pd
+import numpy as np
+
+# Visualizations
+import matplotlib.pyplot as plt
+import seaborn as sns
+plt.style.use('fivethirtyeight')
+plt.rcParams['font.size'] = 22
+import matplotlib.tri as tri
+
+from matplotlib import MatplotlibDeprecationWarning
+
+import warnings
+warnings.filterwarnings('ignore', category=FutureWarning)
+warnings.filterwarnings('ignore', category=MatplotlibDeprecationWarning)
+
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report, confusion_matrix
+
+import pymc3 as pm
+
+from statistics import mean
+
+class Dirichlet(object):
+    def __init__(self, alpha):
+        '''Creates Dirichlet distribution with parameter `alpha`.'''
+        from math import gamma
+        from operator import mul
+        self._alpha = np.array(alpha)
+        self._coef = gamma(np.sum(self._alpha)) / \
+          reduce(mul, [gamma(a) for a in self._alpha])
+    def pdf(self, x):
+        '''Returns pdf value for `x`.'''
+        from operator import mul
+        return self._coef * reduce(mul, [xx ** (aa - 1)
+         for (xx, aa)in zip(x, self._alpha)])
+def sample(self, N):
+    '''Generates a random sample of size `N`.'''
+    return np.random.dirichlet(self._alpha, N)
+
+def draw_pdf_contours(dist, border=False, nlevels=200, subdiv=8, **kwargs):
+    '''Draws pdf contours over an equilateral triangle (2-simplex).
+    Arguments:
+        `dist`: A distribution instance with a `pdf` method.
+        `border` (bool): If True, the simplex border is drawn.
+        `nlevels` (int): Number of contours to draw.
+        `subdiv` (int): Number of recursive mesh subdivisions to create.
+        kwargs: Keyword args passed on to `plt.triplot`.
+    '''
+    from matplotlib import ticker, cm
+    import math
+
+    refiner = tri.UniformTriRefiner(_triangle)
+    trimesh = refiner.refine_triangulation(subdiv=subdiv)
+    pvals = [dist.pdf(xy2bc(xy)) for xy in zip(trimesh.x, trimesh.y)]
+
+    plt.tricontourf(trimesh, pvals, nlevels, **kwargs)
+    plt.axis('equal')
+    plt.xlim(0, 1)
+    plt.ylim(0, 0.75**0.5)
+    plt.axis('off')
+    if border is True:
+        plt.hold(1)
+        plt.triplot(_triangle, linewidth=1)
+
+def plot_points(X, barycentric=True, border=True, **kwargs):
+    if barycentric is True:
+        X = X.dot(_corners)
+        plt.plot(X[:, 0], X[:, 1], 'k.', ms=1, **kwargs)
+        plt.axis('equal')
+        plt.xlim(0, 1)
+        plt.ylim(0, 0.75**0.5)
+        plt.axis('off')
+        if border is True:
+          plt.hold(1)
+          plt.triplot(_triangle, linewidth=1)
+plt.show()
+def annotate_plot():
+    cs = ['#008fd5', '#fc4f30', '#e5ae38']
+    alleles = ['wildtype', 'mutant']
+    for i, (xy, s) in enumerate(zip([(-0.15, 0.075), (0.38, 0.868), (0.98, 0.075)],
+                         alleles)):
+        plt.annotate(s, xy, color = cs[i], size = 20)
+
+def add_legend(ax):
+  alleles = ['wildtype', 'mutant']
+  for l, a in zip(ax.get_lines()[:3], alleles):
+    ax.plot(0, 0, label = a, c = l.get_color())
+    ax.legend()
+    
+def display_probs(d):
+    for key, value in d.items():
+        print(f'Allele: {key:8} Prevalence: {100*value:.2f}%.')
+        
+
+alleles = ['wildtype', 'mutant']
+c = np.array([166, 12])
+
+# hyperparameters 
+alphas = np.array([1, 1])
+
+#weighted case averages for 185delAG
+c = np.array([[89,11],
+             [66, 34],
+             [93,7],
+             [90,10]])
+
+with pm.Model() as model:
+    # Parameters are a dirichlet distribution
+    parameters = pm.Dirichlet('parameters', a=alphas, shape=2)
+    # Observed data is a multinomial distribution
+    observed_data = pm.Multinomial(
+        'observed_data', p=parameters, n=100, shape=2, observed=c)    
+    
+    trace = pm.sample(draws=1000, chains=2, tune=600, discard_tuned_samples=True)
+    
+    summary = pm.summary(trace)
+summary.index = alleles
+summary
